@@ -11,9 +11,9 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/marcdacz/compare-pdf.git"
+		"url": "https://github.com/HonzaZamecnik/compare-pdf-legito.git"
 	},
-	"homepage": "https://github.com/marcdacz/compare-pdf#readme",
+	"homepage": "https://github.com/HonzaZamecnik/compare-pdf-legito#readme",
 	"keywords": [
 		"pdf",
 		"graphicsMagick",
