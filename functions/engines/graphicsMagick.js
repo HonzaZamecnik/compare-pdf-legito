@@ -11,6 +11,9 @@ const pdfToPng = (pdfDetails, pngFilePath, config) => {
 			.command(command)
 			.density(config.settings.density, config.settings.density)
 			.quality(config.settings.quality)
+			.background('white')   // Sets background color
+			.alpha('remove')       // Removes alpha channel
+			.flatten()             // Flattens it onto the background
 			.write(pngFilePath, (err) => {
 				err ? reject(err) : resolve();
 			});
