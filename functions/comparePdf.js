@@ -14,7 +14,7 @@ class ComparePdf {
 			crops: [],
 			onlyPageIndexes: [],
 			skipPageIndexes: []
-		}
+		};
 
 		this.result = {
 			status: 'not executed'
@@ -132,16 +132,52 @@ class ComparePdf {
 		return this;
 	}
 
+	// New method: directly post-process the original exported PNGs.
+	async postProcessPngs() {
+		const actualPngDirPath = this.config.paths.actualPngRootFolder;
+		const baselinePngDirPath = this.config.paths.baselinePngRootFolder;
+		// Get the image engine based on configuration.
+		const imageEngine =
+			this.config.settings.imageEngine === 'graphicsMagick'
+				? require('./engines/graphicsMagick')
+				: require('./engines/native');
+
+		// Get lists of all exported PNG files.
+		const actualPngs = fs.readdirSync(actualPngDirPath).filter(
+			(file) => file.endsWith('.png')
+		);
+		const baselinePngs = fs.readdirSync(baselinePngDirPath).filter(
+			(file) => file.endsWith('.png')
+		);
+
+		// Process the actual PNGs in place.
+		for (const file of actualPngs) {
+			const filePath = path.join(actualPngDirPath, file);
+			await imageEngine.postProcessPng(filePath, this.config);
+		}
+
+		// Process the baseline PNGs in place.
+		for (const file of baselinePngs) {
+			const filePath = path.join(baselinePngDirPath, file);
+			await imageEngine.postProcessPng(filePath, this.config);
+		}
+	}
+
+	// The compare() method runs the comparison then calls postProcessPngs for "byImage" comparisons.
 	async compare(comparisonType = 'byImage') {
 		if (this.result.status === 'not executed' || this.result.status !== 'failed') {
 			const compareDetails = {
 				actualPdfFilename: this.actualPdf,
 				baselinePdfFilename: this.baselinePdf,
-				actualPdfBuffer: this.actualPdfBufferData ? this.actualPdfBufferData : fs.readFileSync(this.actualPdf), //, { encoding: "base64" }
-				baselinePdfBuffer: this.baselinePdfBufferData ? this.baselinePdfBufferData : fs.readFileSync(this.baselinePdf),
+				actualPdfBuffer: this.actualPdfBufferData
+					? this.actualPdfBufferData
+					: fs.readFileSync(this.actualPdf),
+				baselinePdfBuffer: this.baselinePdfBufferData
+					? this.baselinePdfBufferData
+					: fs.readFileSync(this.baselinePdf),
 				config: this.config,
 				opts: this.opts
-			}
+			};
 			switch (comparisonType) {
 				case 'byBase64':
 					this.result = await compareData.comparePdfByBase64(compareDetails);
@@ -150,6 +186,10 @@ class ComparePdf {
 				default:
 					this.result = await compareImages.comparePdfByImage(compareDetails);
 					break;
+			}
+			// If comparing by image, run post-processing on the generated PNG files in place.
+			if (comparisonType === 'byImage') {
+				await this.postProcessPngs();
 			}
 		}
 		return this.result;
